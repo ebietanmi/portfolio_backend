@@ -24,6 +24,37 @@ const pool = mysql2.createPool({
 }
 ).promise();
 
+//Checks if database exists? does nothing of it exists and create a database if it deoes not!
+async function ensureDatabaseExists() {
+    const database = process.env.MYSQL_DATABASE;
+    const connenction = await mysql2.createConnection({
+        uri:process.env.DATABASE_URL,
+        ssl:{rejectUnauthorized:false}
+    }).promise()
+
+    const [rows] = await connenction.execute(`SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = ?`, [database]);
+    if (rows.length === 0) {
+        await connenction.execute(`CREATE DATABASE\`${database}\``)
+        const pool = mysql2.createPool({
+            host: process.env.MYSQL_HOST,
+            user: process.env.MYSQL_USER,
+            password: process.env.MYSQL_PASSWORD,
+            database: process.env.MYSQL_DATABASE,
+            waitForConnections: true,
+            connectionLimit: 10
+        }).promise()
+        await createAdminSchema(pool);
+        await createProjectSchema(pool);
+        await createPrimaryAdmin(pool);
+        await createRecievedMailSchema(pool);
+        await createBlogSchema(pool);
+    } else {
+        null;
+    }
+    await connenction.end();
+}
+ensureDatabaseExists()
+
 
 
 // Creates database schema for adding projects on first use.
@@ -84,37 +115,6 @@ async function createPrimaryAdmin(pool) {
 }
 
 
-//Checks if database exists? does nothing of it exists and create a database if it deoes not!
-async function ensureDatabaseExists() {
-    const database = process.env.MYSQL_DATABASE;
-    const connenction = await mysql2.createConnection({
-        host: process.env.MYSQL_HOST,
-        user: process.env.MYSQL_USER,
-        password: process.env.MYSQL_PASSWORD,
-    }).promise()
-
-    const [rows] = await connenction.execute(`SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = ?`, [database]);
-    if (rows.length === 0) {
-        await connenction.execute(`CREATE DATABASE\`${database}\``)
-        const pool = mysql2.createPool({
-            host: process.env.MYSQL_HOST,
-            user: process.env.MYSQL_USER,
-            password: process.env.MYSQL_PASSWORD,
-            database: process.env.MYSQL_DATABASE,
-            waitForConnections: true,
-            connectionLimit: 10
-        }).promise()
-        await createAdminSchema(pool);
-        await createProjectSchema(pool);
-        await createPrimaryAdmin(pool);
-        await createRecievedMailSchema(pool);
-        await createBlogSchema(pool);
-    } else {
-        null;
-    }
-    await connenction.end();
-}
-ensureDatabaseExists()
 
 export async function createUserSQL(username, password, role) {
     const query = `INSERT INTO admin_table (username, password, role) VALUES (?, ?, ?)`;
