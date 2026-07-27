@@ -1,65 +1,43 @@
 import dotenv from 'dotenv'
-import mysql2 from 'mysql2';
+import mysql2 from 'mysql2/promise'; // use /promise directly
 import bcrypt from 'bcrypt'
-import { response } from 'express';
 dotenv.config();
-
-
-// const pool = mysql2.createPool({
-//     host: process.env.MYSQL_HOST,
-//     user: process.env.MYSQL_USER,
-//     password: process.env.MYSQL_PASSWORD,
-//     database: process.env.MYSQL_DATABASE,
-//     waitForConnections: true,
-//     connectionLimit: 10
-// }).promise();
 
 if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL is not set');
 }
 
+// 1. Create pool once using DATABASE_URL
 const pool = mysql2.createPool({
     uri: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false }
-}
-).promise();
+    ssl: { rejectUnauthorized: false },
+    waitForConnections: true,
+    connectionLimit: 10
+});
 
-//Checks if database exists? does nothing of it exists and create a database if it deoes not!
-async function ensureDatabaseExists() {
-    const database = process.env.MYSQL_DATABASE;
-    const connenction = await mysql2.createConnection({
-        uri:process.env.DATABASE_URL,
-        ssl:{rejectUnauthorized:false}
-    }).promise()
+// 2. Run migrations only once on startup
+export async function ensureDatabaseExists() {
+    try {
+        // Just test connection. DB already exists on Railway
+        await pool.execute('SELECT 1');
+        console.log('DB Connected');
 
-    const [rows] = await connenction.execute(`SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = ?`, [database]);
-    if (rows.length === 0) {
-        await connenction.execute(`CREATE DATABASE\`${database}\``)
-        const pool = mysql2.createPool({
-            host: process.env.MYSQL_HOST,
-            user: process.env.MYSQL_USER,
-            password: process.env.MYSQL_PASSWORD,
-            database: process.env.MYSQL_DATABASE,
-            waitForConnections: true,
-            connectionLimit: 10
-        }).promise()
-        await createAdminSchema(pool);
-        await createProjectSchema(pool);
-        await createPrimaryAdmin(pool);
-        await createRecievedMailSchema(pool);
-        await createBlogSchema(pool);
-    } else {
-        null;
+        // Create tables if they don't exist
+        await createAdminSchema();
+        await createProjectSchema();
+        await createBlogSchema();
+        await createRecievedMailSchema();
+        await createPrimaryAdmin();
+
+    } catch (err) {
+        console.error('DB Init failed:', err);
+        process.exit(1);
     }
-    await connenction.end();
 }
-ensureDatabaseExists()
 
-
-
-// Creates database schema for adding projects on first use.
-async function createProjectSchema(pool) {
-    const query = `CREATE TABLE project_table (
+// 3. All schema functions now use the global pool and IF NOT EXISTS
+async function createProjectSchema() {
+    const query = `CREATE TABLE IF NOT EXISTS project_table (
     id INT PRIMARY KEY AUTO_INCREMENT,
     project_title VARCHAR(255) NOT NULL,
     project_author VARCHAR(255) DEFAULT "No Author",
@@ -68,11 +46,11 @@ async function createProjectSchema(pool) {
     project_img_url VARCHAR(255),
     project_public_id VARCHAR(255)
 )`
-    pool.query(query)
+    await pool.query(query)
 }
-// Creates database schema for adding blogs on first use.
-async function createBlogSchema(pool) {
-    const query = `CREATE TABLE blog_table (
+
+async function createBlogSchema() {
+    const query = `CREATE TABLE IF NOT EXISTS blog_table (
     id INT PRIMARY KEY AUTO_INCREMENT,
     blog_title VARCHAR(255) NOT NULL,
     blog_excerpt VARCHAR(255) DEFAULT "No excerpt",
@@ -82,42 +60,43 @@ async function createBlogSchema(pool) {
     blog_img_url VARCHAR(255),
     blog_public_id VARCHAR(255)
 )`
-    pool.query(query)
+    await pool.query(query)
 }
-// Creates database schema for adding admin on first use.
-async function createAdminSchema(pool) {
-    const query = `CREATE TABLE admin_table (
+
+async function createAdminSchema() {
+    const query = `CREATE TABLE IF NOT EXISTS admin_table (
     id INT PRIMARY KEY AUTO_INCREMENT,
     username VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
-    role    VARCHAR(255) NOT NULL DEFAULT "user"
+    role VARCHAR(255) NOT NULL DEFAULT "user"
 )`
-    pool.query(query)
+    await pool.query(query)
 }
-// Creates database schema for recieved mail.
-async function createRecievedMailSchema(pool) {
-    const query = `CREATE TABLE recieved_email_table (
+
+async function createRecievedMailSchema() {
+    const query = `CREATE TABLE IF NOT EXISTS recieved_email_table (
     id INT PRIMARY KEY AUTO_INCREMENT,
     sender_name VARCHAR(255) NOT NULL,
     sender_email VARCHAR(255) NOT NULL,
     subject VARCHAR(255) DEFAULT 'Message from portfolio website',
-    message    VARCHAR(255) NOT NULL
+    message TEXT NOT NULL
 )`
-    pool.query(query)
+    await pool.query(query)
 }
 
-
-
-// Creates admin profile on first use.
-async function createPrimaryAdmin(pool) {
-    const hashedPassword = await bcrypt.hash('admin', 10)
-    createUserSQL('admin', hashedPassword, 'admin')
+// 4. Check if admin exists before creating
+async function createPrimaryAdmin() {
+    const existing = await pool.query('SELECT id FROM admin_table WHERE username =?', ['admin']);
+    if (existing[0].length === 0) {
+        const hashedPassword = await bcrypt.hash('admin', 10)
+        await createUserSQL('admin', hashedPassword, 'admin')
+        console.log('Default admin created: admin/admin');
+    }
 }
 
-
-
+// 5. All your SQL functions stay the same but use global pool
 export async function createUserSQL(username, password, role) {
-    const query = `INSERT INTO admin_table (username, password, role) VALUES (?, ?, ?)`;
+    const query = `INSERT INTO admin_table (username, password, role) VALUES (?,?,?)`;
     try {
         const [response] = await pool.query(query, [username, password, role]);
         if (response.affectedRows > 0) {
@@ -127,15 +106,15 @@ export async function createUserSQL(username, password, role) {
             return { 'ok': false, "SQLMessage": 'Failed to create user' }
         }
     } catch (error) {
-        if (error instanceof Error) {
-            if (error.errno === 1062) {
-                return { 'ok': false, 'taken': true, "SQLMessage": 'Username is already taken' }
-            } else {
-                return { 'ok': false, "SQLMessage": error }
-            }
+        if (error.errno === 1062) {
+            return { 'ok': false, 'taken': true, "SQLMessage": 'Username is already taken' }
+        } else {
+            return { 'ok': false, "SQLMessage": error.message }
         }
     }
 }
+
+//... keep all your other export functions exactly as they are...
 
 export async function getUsersSQL() {
     const query = 'SELECT * FROM admin_table';
@@ -278,3 +257,5 @@ export async function createRecievedMailSQL(sender_name, sender_email, subject, 
 
     return result;
 }
+
+export { pool };
