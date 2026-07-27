@@ -1,3 +1,4 @@
+import dotenv from 'dotenv';
 import express, { json, response } from 'express';
 import cors from 'cors';
 import bcrypt from 'bcrypt';
@@ -14,6 +15,8 @@ import {
     getBlogsSQL
 } from './controllers/database_controller.js';
 import { errorMonitor } from 'events';
+dotenv.config()
+
 
 
 cloudinary.config({
@@ -22,7 +25,7 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET
 
 });
-
+const PORT = process.env.PORT || 8080;
 const app = express();
 app.use(cors()) // 
 app.use(express.json())
@@ -370,8 +373,16 @@ export async function sendAndSaveMail() {
 }
 
 
+app.get('/', (req, res) => {
+  res.json({ ok: true, message: "API is up" })
+})
+
+app.get('/health', (req, res) => {
+  res.json({ db: "connected" })
+})
+
 // Starting the server.
-app.listen(process.env.PORT, () => {
+app.listen(PORT,'0.0.0.0', () => {
     console.log(`Sever is up and running on port ${process.env.PORT}`)
 });
 
