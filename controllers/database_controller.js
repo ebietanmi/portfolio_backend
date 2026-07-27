@@ -96,19 +96,20 @@ async function ensureDatabaseExists() {
 ensureDatabaseExists()
 
 
-const pool = mysql2.createPool({
-    host: process.env.MYSQL_HOST,
-    user: process.env.MYSQL_USER,
-    password: process.env.MYSQL_PASSWORD,
-    database: process.env.MYSQL_DATABASE,
-    waitForConnections: true,
-    connectionLimit: 10
-}).promise();
-
 // const pool = mysql2.createPool({
-//     uri: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false }
-// }
-// ).promise();
+//     host: process.env.MYSQL_HOST,
+//     user: process.env.MYSQL_USER,
+//     password: process.env.MYSQL_PASSWORD,
+//     database: process.env.MYSQL_DATABASE,
+//     waitForConnections: true,
+//     connectionLimit: 10
+// }).promise();
+
+const pool = mysql2.createPool({
+    uri: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
+}
+).promise();
 
 
 
