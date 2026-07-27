@@ -5,6 +5,27 @@ import { response } from 'express';
 dotenv.config();
 
 
+// const pool = mysql2.createPool({
+//     host: process.env.MYSQL_HOST,
+//     user: process.env.MYSQL_USER,
+//     password: process.env.MYSQL_PASSWORD,
+//     database: process.env.MYSQL_DATABASE,
+//     waitForConnections: true,
+//     connectionLimit: 10
+// }).promise();
+
+if (!process.env.DATABASE_URL) {
+  throw new Error('DATABASE_URL is not set');
+}
+
+const pool = mysql2.createPool({
+    uri: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
+}
+).promise();
+
+
+
 // Creates database schema for adding projects on first use.
 async function createProjectSchema(pool) {
     const query = `CREATE TABLE project_table (
@@ -94,24 +115,6 @@ async function ensureDatabaseExists() {
     await connenction.end();
 }
 ensureDatabaseExists()
-
-
-// const pool = mysql2.createPool({
-//     host: process.env.MYSQL_HOST,
-//     user: process.env.MYSQL_USER,
-//     password: process.env.MYSQL_PASSWORD,
-//     database: process.env.MYSQL_DATABASE,
-//     waitForConnections: true,
-//     connectionLimit: 10
-// }).promise();
-
-const pool = mysql2.createPool({
-    uri: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false }
-}
-).promise();
-
-
 
 export async function createUserSQL(username, password, role) {
     const query = `INSERT INTO admin_table (username, password, role) VALUES (?, ?, ?)`;
