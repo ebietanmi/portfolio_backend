@@ -19,18 +19,43 @@ dotenv.config()
 
 
 
+const PORT = process.env.PORT || 8080;
+const app = express();
+
+
+const allowedOrigins = [
+    'http://localhost:5173',
+    'http://ebietanmi-portfolio.up.railway.app/'
+];
+app.use(cors({
+    origin: allowedOrigins, // NO '*'
+    credentials: true,      // allows cookies
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+})) // 
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }));
+
+
+
+//Cloudunary Setup
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET
 
 });
-const PORT = process.env.PORT || 8080;
-const app = express();
-app.use(cors()) // 
-app.use(express.json())
-app.use(express.urlencoded({ extended: true }));
 
+// EMAIL Setup
+const transporter = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
+    auth: {
+        user: process.env.USER_EMAIL,
+        pass: process.env.USER_EMAIL_PASSWORD
+    }
+});
 
 
 // Handles and report errors tha may arise while starting the server.
@@ -271,7 +296,7 @@ export async function getBlogs() {
     })
 }
 
-
+//Password Reset
 export async function resetPassword() {
     const authMiddleware = async (req, res, next) => {
         const token = req.headers.authorization?.split(' ')[1];
@@ -308,18 +333,8 @@ export async function resetPassword() {
 
 }
 
-// EMAIL SETUP
-const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
-    auth: {
-        user: process.env.USER_EMAIL,
-        pass: process.env.USER_EMAIL_PASSWORD
-    }
-});
 
-// CHECK FOR CONNECTIVITY
+// Check email connectivity
 async function checkMailNetworkStatus() {
     await app.get('/check-mail-network', async (req, res) => {
         try {
@@ -373,16 +388,19 @@ export async function sendAndSaveMail() {
 }
 
 
-app.get('/', (req, res) => {
-  res.json({ ok: true, message: "API is up" })
-})
+export async function getApiStatus() {
+    app.get('/', (req, res) => {
+        res.json({ ok: true, message: "API is up" })
+    })
 
-app.get('/health', (req, res) => {
-  res.json({ db: "connected" })
-})
+    app.get('/health', (req, res) => {
+        res.json({ db: "connected" })
+    })
+}
+
 
 // Starting the server.
-app.listen(PORT,'0.0.0.0', () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`Sever is up and running on port ${process.env.PORT}`)
 });
 
@@ -401,4 +419,5 @@ sendAndSaveMail();
 CreateBlog();
 getBlogs();
 checkMailNetworkStatus();
+getApiStatus();
 

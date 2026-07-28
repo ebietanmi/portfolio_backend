@@ -1,5 +1,5 @@
 import dotenv from 'dotenv'
-import mysql2 from 'mysql2/promise'; // use /promise directly
+import mysql2 from 'mysql2/promise'; 
 import bcrypt from 'bcrypt'
 dotenv.config();
 
@@ -7,7 +7,7 @@ if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL is not set');
 }
 
-// 1. Create pool once using DATABASE_URL
+// Creating database pool
 const pool = mysql2.createPool({
     uri: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false },
@@ -15,14 +15,12 @@ const pool = mysql2.createPool({
     connectionLimit: 10
 });
 
-// 2. Run migrations only once on startup
+// Run migrations only once on startup
 export async function ensureDatabaseExists() {
     try {
-        // Just test connection. DB already exists on Railway
         await pool.execute('SELECT 1');
         console.log('DB Connected');
 
-        // Create tables if they don't exist
         await createAdminSchema();
         await createProjectSchema();
         await createBlogSchema();
@@ -35,7 +33,7 @@ export async function ensureDatabaseExists() {
     }
 }
 
-// 3. All schema functions now use the global pool and IF NOT EXISTS
+// All schema functions now use the global pool and IF NOT EXISTS
 async function createProjectSchema() {
     const query = `CREATE TABLE IF NOT EXISTS project_table (
     id INT PRIMARY KEY AUTO_INCREMENT,
@@ -113,8 +111,6 @@ export async function createUserSQL(username, password, role) {
         }
     }
 }
-
-//... keep all your other export functions exactly as they are...
 
 export async function getUsersSQL() {
     const query = 'SELECT * FROM admin_table';
