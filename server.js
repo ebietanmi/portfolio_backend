@@ -15,18 +15,17 @@ import {
     getBlogsSQL
 } from './controllers/database_controller.js';
 import { errorMonitor } from 'events';
-dotenv.config()
+dotenv.config();
 
 
 
 const PORT = process.env.PORT || 8080;
 const app = express();
 
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',')
+    : ['http://localhost:5173'];
 
-const allowedOrigins = [
-    'http://localhost:5173',
-    'http://ebietanmi-portfolio.up.railway.app/'
-];
 app.use(cors({
     origin: allowedOrigins, // NO '*'
     credentials: true,      // allows cookies
@@ -145,13 +144,19 @@ export async function logIn() {
                         { expiresIn: '15m' }
                     );
                     res.status(201).json({ token, 'ok': true, id: user.id, user: username });
+                    res.cookie('token', token, {
+                        httpOnly: true,
+                        secure: true,
+                        sameSite: 'none'
+                    });
+                    res.json({ ok: true });
                 }
                 else { res.status(401).json({ 'ok': false }) }
             }
         } catch (error) {
             res.status(500).send(error);
         }
-    })
+    });
 }
 
 //This API route handles the creation of new user.
@@ -213,15 +218,16 @@ export async function getProject(id) {
 
 //This API route handles fetching odf all project.
 export async function getProjects() {
-    const response = app.get("/projects", async (req, res) => {
+    app.get("/projects", async (req, res) => {
         try {
             const data = await getProjectsSQL();
-            data.length > 0 ? res.status(200).send(data) : res.status(401).send({ "message": data.SQLMessage })
+            // Return 200 even if empty. Only 500 for actual errors
+            res.status(200).send(data);
         } catch (error) {
             console.error('Error fetching projects:', error);
             res.status(500).send({ error: 'An error occurred while fetching projects' });
         }
-    })
+    });
 }
 
 export async function deleteProject() {
