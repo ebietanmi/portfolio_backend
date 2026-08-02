@@ -341,37 +341,32 @@ export async function resetPassword() {
 
 
 // Check email connectivity
-
-let mailStatus = { ok: false, message: 'Checking...' }
-
-// 1. Verify once when server starts
-transporter.verify((error, success) => {
-    if (error) {
-        console.log('SMTP Error:', error)
-        mailStatus = { ok: false, message: 'Network is unstable' }
-    } else {
-        console.log('SMTP Ready')
-        mailStatus = { ok: true, message: 'Network is stable, send mail' }
-    }
-})
-
-// 2. Route just returns cached status - INSTANT
-app.get("/check-mail-network", (req, res) => {
-    res.status(mailStatus.ok ? 200 : 503).json({
-        'status': mailStatus.ok ? 200 : 503,
-        'ok': mailStatus.ok,
-        "message": mailStatus.message
-    })
-});
-
-setInterval(() => {
+async function checkMailNetworkStatus() {
+    let mailStatus = { ok: false, message: 'Checking...' }
     transporter.verify((error, success) => {
-        mailStatus = error ? { ok: false, message: 'Unstable' } : { ok: true, message: 'Stable' }
+        if (error) {
+            console.log('SMTP Error:', error)
+            mailStatus = { ok: false, message: 'Network is unstable' }
+        } else {
+            console.log('SMTP Ready')
+            mailStatus = { ok: true, message: 'Network is stable, send mail' }
+        }
     })
-}, 1000 * 60 * 5)
-// async function checkMailNetworkStatus() {
-//    // every 5min
-// }
+
+    app.get("/check-mail-network", (req, res) => {
+        res.status(mailStatus.ok ? 200 : 503).json({
+            'status': mailStatus.ok ? 200 : 503,
+            'ok': mailStatus.ok,
+            "message": mailStatus.message
+        })
+    });
+
+    setInterval(() => {
+        transporter.verify((error, success) => {
+            mailStatus = error ? { ok: false, message: 'Unstable' } : { ok: true, message: 'Stable' }
+        })
+    }, 1000 * 60 * 2)
+}
 
 export async function sendAndSaveMail() {
     await app.post("/send-mail", async (req, res) => {
@@ -437,6 +432,6 @@ resetPassword();
 sendAndSaveMail();
 CreateBlog();
 getBlogs();
-// checkMailNetworkStatus();
+checkMailNetworkStatus();
 getApiStatus();
 
