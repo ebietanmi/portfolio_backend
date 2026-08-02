@@ -365,7 +365,7 @@ async function checkMailNetworkStatus() {
         transporter.verify((error, success) => {
             mailStatus = error ? { ok: false, message: 'Unstable' } : { ok: true, message: 'Stable' }
         })
-    }, 1000 * 60 * 2)
+    }, 1000 * 60 * 1)
 }
 
 export async function sendAndSaveMail() {
