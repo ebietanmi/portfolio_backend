@@ -330,12 +330,20 @@ export async function resetPassword() {
 }
 
 // EMAIL Setup
+// const transporter = nodemailer.createTransport({
+//     host: process.env.SMTP_HOST,
+//     port: process.env.SMTP_PORT,
+//     auth: {
+//         user: process.env.USER_EMAIL,
+//         pass: process.env.USER_EMAIL_PASSWORD
+//     }
+// });
 const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: process.env.SMTP_PORT,
+    host: 'smtp.gmail.com',
+    port: 587,
     auth: {
-        user: process.env.USER_EMAIL,
-        pass: process.env.USER_EMAIL_PASSWORD
+        user: 'taeb4all@gmail.com',
+        pass: 'gszushnixznaqban'
     }
 });
 
