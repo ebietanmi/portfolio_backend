@@ -45,17 +45,6 @@ cloudinary.config({
 
 });
 
-// EMAIL Setup
-const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: process.env.SMTP_PORT,
-    secure: false, // true for 465, false for other ports
-    requireTLS:true,
-    auth: {
-        user: process.env.USER_EMAIL,
-        pass: process.env.USER_EMAIL_PASSWORD
-    }
-});
 
 
 // Handles and report errors tha may arise while starting the server.
@@ -340,10 +329,20 @@ export async function resetPassword() {
 
 }
 
+// EMAIL Setup
+const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: process.env.SMTP_PORT,
+    auth: {
+        user: process.env.USER_EMAIL,
+        pass: process.env.USER_EMAIL_PASSWORD
+    }
+});
+
 
 // Check email connectivity
 async function checkMailNetworkStatus() {
-    let mailStatus = { ok: false, message: 'Checking...' }
+    let mailStatus = { ok: false, message: 'Checking network...' }
     transporter.verify((error, success) => {
         if (error) {
             console.log('SMTP Error:', error)
@@ -353,21 +352,19 @@ async function checkMailNetworkStatus() {
             mailStatus = { ok: true, message: 'Network is stable, send mail' }
         }
     })
-
     app.get("/check-mail-network", (req, res) => {
         res.status(mailStatus.ok ? 200 : 503).json({
             'status': mailStatus.ok ? 200 : 503,
             'ok': mailStatus.ok,
             "message": mailStatus.message
-        })
+        });
     });
 
     setInterval(() => {
         transporter.verify((error, success) => {
-            mailStatus = error ? { ok: false, message: 'Network is unstable' } : 
-            { ok: true, message: 'Network is stable, send mail' }
+            mailStatus = error ? { ok: false, message: 'Unstable' } : { ok: true, message: 'Network Stable, send message' }
         })
-    }, 1000 * 60 * 1)
+    }, 1000 * 60 * 1);
 }
 
 export async function sendAndSaveMail() {
