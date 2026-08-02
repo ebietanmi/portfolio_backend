@@ -437,6 +437,6 @@ resetPassword();
 sendAndSaveMail();
 CreateBlog();
 getBlogs();
-checkMailNetworkStatus();
+// checkMailNetworkStatus();
 getApiStatus();
 
