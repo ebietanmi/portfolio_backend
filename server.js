@@ -349,7 +349,7 @@ const transporter = nodemailer.createTransport({
 
 
 // Check email connectivity
-async function checkMailNetworkStatus() {
+// async function checkMailNetworkStatus() {
     let mailStatus = { ok: false, message: 'Checking network...' };
 
     transporter.verify((error, success) => {
@@ -375,7 +375,7 @@ async function checkMailNetworkStatus() {
            ( console.log(success), { ok: true, message: 'Network Stable, send message' })
         })
     }, 1000 * 60 * 1);
-}
+// }
 
 export async function sendAndSaveMail() {
     await app.post("/send-mail", async (req, res) => {
@@ -441,6 +441,6 @@ resetPassword();
 sendAndSaveMail();
 CreateBlog();
 getBlogs();
-checkMailNetworkStatus();
+// checkMailNetworkStatus();
 getApiStatus();
 
