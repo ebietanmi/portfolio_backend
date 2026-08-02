@@ -363,7 +363,8 @@ async function checkMailNetworkStatus() {
 
     setInterval(() => {
         transporter.verify((error, success) => {
-            mailStatus = error ? { ok: false, message: 'Unstable' } : { ok: true, message: 'Stable' }
+            mailStatus = error ? { ok: false, message: 'Network is unstable' } : 
+            { ok: true, message: 'Network is stable, send mail' }
         })
     }, 1000 * 60 * 1)
 }
