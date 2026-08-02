@@ -47,9 +47,9 @@ cloudinary.config({
 
 // EMAIL Setup
 const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
+    host: process.env.SMTP_HOST,
+    port: process.env.SMTP_PORT,
+    secure: false, // true for 465, false for other ports
     auth: {
         user: process.env.USER_EMAIL,
         pass: process.env.USER_EMAIL_PASSWORD
@@ -341,35 +341,37 @@ export async function resetPassword() {
 
 
 // Check email connectivity
-async function checkMailNetworkStatus() {
-    let mailStatus = { ok: false, message: 'Checking...' }
 
-    // 1. Verify once when server starts
-    transporter.verify((error, success) => {
-        if (error) {
-            console.log('SMTP Error:', error)
-            mailStatus = { ok: false, message: 'Network is unstable' }
-        } else {
-            console.log('SMTP Ready')
-            mailStatus = { ok: true, message: 'Network is stable, send mail' }
-        }
+let mailStatus = { ok: false, message: 'Checking...' }
+
+// 1. Verify once when server starts
+transporter.verify((error, success) => {
+    if (error) {
+        console.log('SMTP Error:', error)
+        mailStatus = { ok: false, message: 'Network is unstable' }
+    } else {
+        console.log('SMTP Ready')
+        mailStatus = { ok: true, message: 'Network is stable, send mail' }
+    }
+})
+
+// 2. Route just returns cached status - INSTANT
+app.get("/check-mail-network", (req, res) => {
+    res.status(mailStatus.ok ? 200 : 503).json({
+        'status': mailStatus.ok ? 200 : 503,
+        'ok': mailStatus.ok,
+        "message": mailStatus.message
     })
+});
 
-    // 2. Route just returns cached status - INSTANT
-    app.get("/check-mail-network", (req, res) => {
-        res.status(mailStatus.ok ? 200 : 503).json({
-            'status': mailStatus.ok ? 200 : 503,
-            'ok': mailStatus.ok,
-            "message": mailStatus.message
-        })
-    });
-
-    setInterval(() => {
-  transporter.verify((error, success) => {
-    mailStatus = error ? {ok:false, message:'Unstable'} : {ok:true, message:'Stable'}
-  })
-}, 1000 * 60 * 5) // every 5min
-}
+setInterval(() => {
+    transporter.verify((error, success) => {
+        mailStatus = error ? { ok: false, message: 'Unstable' } : { ok: true, message: 'Stable' }
+    })
+}, 1000 * 60 * 5)
+// async function checkMailNetworkStatus() {
+//    // every 5min
+// }
 
 export async function sendAndSaveMail() {
     await app.post("/send-mail", async (req, res) => {
