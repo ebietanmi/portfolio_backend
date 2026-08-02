@@ -342,14 +342,14 @@ export async function resetPassword() {
 
 // Check email connectivity
 async function checkMailNetworkStatus() {
-    await app.get('/check-mail-network', async (req, res) => {
+    await app.get("/check-mail-network", async (req, res) => {
         try {
             const response = await transporter.verify(
                 (error, success) => {
                     if (error) {
                         res.status(501).json({ 'status': 500, 'ok': false, "message": 'Network is unstable' })
                     } else {
-                        res.status(201).json({ 'status': 201, 'ok': true, "message": 'Network is stable send mail' })
+                        res.status(201).json({ 'status': 201, 'ok': true, "message": 'Network is stable, send mail' })
                     }
                 }
             );

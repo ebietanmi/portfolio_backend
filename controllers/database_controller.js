@@ -20,7 +20,6 @@ export async function ensureDatabaseExists() {
     try {
         await pool.execute('SELECT 1');
         console.log('DB Connected');
-
         await createAdminSchema();
         await createProjectSchema();
         await createBlogSchema();
@@ -28,7 +27,7 @@ export async function ensureDatabaseExists() {
         await createPrimaryAdmin();
 
     } catch (err) {
-        console.error('DB Init failed:', err);
+        console.error('DB Init failed:', err.errno);
         process.exit(1);
     }
 }
