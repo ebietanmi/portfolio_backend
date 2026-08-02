@@ -342,7 +342,8 @@ const transporter = nodemailer.createTransport({
 
 // Check email connectivity
 async function checkMailNetworkStatus() {
-    let mailStatus = { ok: false, message: 'Checking network...' }
+    let mailStatus = { ok: false, message: 'Checking network...' };
+
     transporter.verify((error, success) => {
         if (error) {
             console.log('SMTP Error:', error)
@@ -362,7 +363,8 @@ async function checkMailNetworkStatus() {
 
     setInterval(() => {
         transporter.verify((error, success) => {
-            mailStatus = error ? { ok: false, message: 'Network Unstable' } : { ok: true, message: 'Network Stable, send message' }
+            mailStatus = error ?( console.log(error),  { ok: false, message: 'Network Unstable' }) : 
+           ( console.log(success), { ok: true, message: 'Network Stable, send message' })
         })
     }, 1000 * 60 * 1);
 }
