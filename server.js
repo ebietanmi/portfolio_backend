@@ -330,10 +330,7 @@ export async function resetPassword() {
 
 }
 
-
-import { Resend } from 'resend';
 const resend = new Resend(process.env.RESEND_API_KEY);
-
 
 async function checkMailNetworkStatus() {
     let networkStatus = { ok: false, message: 'Checking network...' };
