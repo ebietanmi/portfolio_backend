@@ -15,6 +15,7 @@ import {
     getBlogsSQL
 } from './controllers/database_controller.js';
 import { errorMonitor } from 'events';
+import { Resend } from 'resend';
 dotenv.config();
 
 
@@ -329,76 +330,60 @@ export async function resetPassword() {
 
 }
 
-// EMAIL Setup
-const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: process.env.SMTP_PORT,
-    auth: {
-        user: process.env.USER_EMAIL,
-        pass: process.env.USER_EMAIL_PASSWORD
-    }
-});
+
+import { Resend } from 'resend';
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 
-// Check email connectivity
 async function checkMailNetworkStatus() {
-    let mailStatus = { ok: false, message: 'Checking network...' };
-    let _error = null;
-
-    transporter.verify((error, success) => {
-        if (error) {
-            console.log('SMTP Error:', error)
-            _error = error;
-            mailStatus = { ok: false, message: 'Network is unstable' }
-        } else {
-            console.log('SMTP Ready')
-            mailStatus = { ok: true, message: 'Network is stable, send mail' }
+    let networkStatus = { ok: false, message: 'Checking network...' };
+    app.get("/check-mail-network", async (req, res) => {
+        try {
+            await resend.domains.list()
+            networkStatus.ok = true;
+            networkStatus.message = 'Network is stable, send mail';
+            res.status(200).json({ ok: networkStatus.ok, message: networkStatus.message });
+        } catch (error) {
+            networkStatus.ok = false;
+            networkStatus.message = 'Network is unstable';
+            console.error('Error checking network status:', error);
+            res.status(503).json({ ok: networkStatus.ok, message: networkStatus.message, error: error.message });
         }
-    })
-    app.get("/check-mail-network", (req, res) => {
-        res.status(mailStatus.ok ? 200 : 503).json({
-            'status': mailStatus.ok ? 200 : 503,
-            'ok': mailStatus.ok,
-            "message": mailStatus.message,
-            'error': _error
-        });
     });
-
     setInterval(() => {
-        transporter.verify((error, success) => {
-            mailStatus = error ?( console.log(error), 
-            _error=error,  
-            { ok: false, message: 'Network Unstable' }) : { ok: true, message: 'Network Stable, send message' }
-        })
+        resend.domains.list()
+            .then(() => {
+                networkStatus.ok = true;
+                networkStatus.message = 'Network is stable, send mail';
+            })
+            .catch((error) => {
+                networkStatus.ok = false;
+                networkStatus.message = 'Network is unstable';
+                console.error('Error checking network status:', error);
+            });
     }, 1000 * 60 * 1);
 }
+
 
 export async function sendAndSaveMail() {
     await app.post("/send-mail", async (req, res) => {
         const { name, email, subject, message } = req.body;
-        const mailOptions = {
-            name: name,
-            email: email, subject: subject,
-            text: message,
-            to: process.env.USER_EMAIL
-        }
         try {
-            await transporter.sendMail(mailOptions, async (error, info) => {
-                if (error) {
-                    console.error('Error sending email:', error);
-                    res.status(500).json({ 'ok': false, 'message': 'Unable to send email' });
-                }
-                else {
-                    const sql_response = await createRecievedMailSQL(mailOptions.name, mailOptions.email, mailOptions.subject, mailOptions.text);
-                    if (sql_response.ok) {
-                        res.status(200).json({ 'ok': true, 'message': 'Email sent successfully' })
-                    }
-                    else {
-                        res.status(500).json({ 'ok': false, 'message': 'Email sent but not saved' })
-                    }
+            const { data, error } = await resend.emails.send({
+                from: email,
+                to: process.env.USER_EMAIL,
+                subject: subject,
+                html: '<p>Yout email sent <strong>Succesfully!</strong>!</p>'
+            });
+            if (data) {
+                const sql_response = await createRecievedMailSQL(name, email, subject, message);
+                if (sql_response.ok) {
+                    res.status(200).json({ 'ok': true, 'message': 'Email sent successfully' });
                 }
             }
-            );
+            else {
+                res.status(500).json({ 'ok': false, 'message': 'Email sent but not saved' })
+            }
         } catch (error) {
             res.status(500).json({ 'ok': false, 'message': 'Internal Server error, Email not sent' })
         }
