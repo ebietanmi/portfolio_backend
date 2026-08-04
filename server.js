@@ -364,25 +364,26 @@ async function checkMailNetworkStatus() {
 export async function sendAndSaveMail() {
     await app.post("/send-mail", async (req, res) => {
         const { name, email, subject, message } = req.body;
-        try {
-            const { data, error } = await resend.emails.send({
-                from: email,
-                to: process.env.USER_EMAIL,
-                subject: subject,
-                html: '<p>Your email sent <strong>Succesfully!</strong>!</p>'
-            });
-            if (data) {
-                const sql_response = await createRecievedMailSQL(name, email, subject, message);
-                if (sql_response.ok) {
-                    res.status(200).json({ 'ok': true, 'message': 'Email sent successfully' });
-                }
-            }
-            else {
-                res.status(500).json({ 'ok': false, 'message': 'Email sent but not saved' })
-            }
-        } catch (error) {
-            res.status(500).json({ 'ok': false, 'message': 'Internal Server error, Email not sent' })
-        }
+        console.log(name, email, subject, message);
+        // try {
+        //     const { data, error } = await resend.emails.send({
+        //         from: email,
+        //         to: process.env.USER_EMAIL,
+        //         subject: subject,
+        //         html: '<p>Your email sent <strong>Succesfully!</strong>!</p>'
+        //     });
+        //     if (data) {
+        //         const sql_response = await createRecievedMailSQL(name, email, subject, message);
+        //         if (sql_response.ok) {
+        //             res.status(200).json({ 'ok': true, 'message': 'Email sent successfully' });
+        //         }
+        //     }
+        //     else {
+        //         res.status(500).json({ 'ok': false, 'message': 'Email sent but not saved' })
+        //     }
+        // } catch (error) {
+        //     res.status(500).json({ 'ok': false, 'message': 'Internal Server error, Email not sent' })
+        // }
     }
     );
 }
