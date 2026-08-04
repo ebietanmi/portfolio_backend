@@ -331,7 +331,6 @@ export async function resetPassword() {
 }
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-
 async function checkMailNetworkStatus() {
     let networkStatus = { ok: false, message: 'Checking network...' };
     app.get("/check-mail-network", async (req, res) => {
@@ -370,7 +369,7 @@ export async function sendAndSaveMail() {
                 from: email,
                 to: process.env.USER_EMAIL,
                 subject: subject,
-                html: '<p>Yout email sent <strong>Succesfully!</strong>!</p>'
+                html: '<p>Your email sent <strong>Succesfully!</strong>!</p>'
             });
             if (data) {
                 const sql_response = await createRecievedMailSQL(name, email, subject, message);
