@@ -251,8 +251,6 @@ export async function createRecievedMailSQL(sender_name, sender_email, subject, 
         console.log(response)
         return { "SQLMessage": 'Message not saved', "ok": false }
     }
-
-    return result;
 }
 
 export { pool };
