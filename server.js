@@ -389,7 +389,7 @@ export async function sendAndSaveMail() {
         //     console.log("From Node",error)
         //     res.status(500).json({ 'ok': false, 'message': 'Internal Server error, Email not sent' })
         // }
-        res.send('Endpoint seen');
+        res.status(200).json({ 'ok': true, 'message': 'Email sent successfully' });
     }
     );
 }
