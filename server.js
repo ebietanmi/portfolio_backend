@@ -18,7 +18,9 @@ import { errorMonitor } from 'events';
 import { Resend } from 'resend';
 dotenv.config();
 
-
+if (!process.env.DATABASE_URL) {
+    throw new Error('DATABASE_URL is not set');
+}   
 
 const PORT = process.env.PORT || 8080;
 const app = express();
@@ -331,6 +333,7 @@ export async function resetPassword() {
 }
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+
 async function checkMailNetworkStatus() {
     let networkStatus = { ok: false, message: 'Checking network...' };
     app.get("/check-mail-network", async (req, res) => {
@@ -357,33 +360,32 @@ async function checkMailNetworkStatus() {
                 networkStatus.message = 'Network is unstable';
                 console.error('Error checking network status:', error);
             });
-    }, 1000 * 60 * 1);
+    }, 1000 * 60 * 5);
 }
 
 
 export async function sendAndSaveMail() {
     await app.post("/send-mail", async (req, res) => {
         const { name, email, subject, message } = req.body;
-        console.log(name, email, subject, message);
-        // try {
-        //     const { data, error } = await resend.emails.send({
-        //         from: email,
-        //         to: process.env.USER_EMAIL,
-        //         subject: subject,
-        //         html: '<p>Your email sent <strong>Succesfully!</strong>!</p>'
-        //     });
-        //     if (data) {
-        //         const sql_response = await createRecievedMailSQL(name, email, subject, message);
-        //         if (sql_response.ok) {
-        //             res.status(200).json({ 'ok': true, 'message': 'Email sent successfully' });
-        //         }
-        //     }
-        //     else {
-        //         res.status(500).json({ 'ok': false, 'message': 'Email sent but not saved' })
-        //     }
-        // } catch (error) {
-        //     res.status(500).json({ 'ok': false, 'message': 'Internal Server error, Email not sent' })
-        // }
+        try {
+            const { data, error } = await resend.emails.send({
+                from: email,
+                to: process.env.USER_EMAIL,
+                subject: subject,
+                html: '<p>Your email sent <strong>Succesfully!</strong>!</p>'
+            });
+            if (data) {
+                const sql_response = await createRecievedMailSQL(name, email, subject, message);
+                if (sql_response.ok) {
+                    res.status(200).json({ 'ok': true, 'message': 'Email sent successfully' });
+                }
+            }
+            else {
+                res.status(500).json({ 'ok': false, 'message': 'Email sent but not saved' })
+            }
+        } catch (error) {
+            res.status(500).json({ 'ok': false, 'message': 'Internal Server error, Email not sent' })
+        }
     }
     );
 }

@@ -243,13 +243,11 @@ export async function createRecievedMailSQL(sender_name, sender_email, subject, 
     const [response] = await pool.query(
         query, [sender_name, sender_email, subject, message]
     );
-    if (result.affectedRows > 0) {
-        console.log(response);
+    if (response.affectedRows > 0) {
         return { "SQLMessage": 'Message sent saved', "ok": true }
     }
     else {
-        console.log(response)
-        return { "SQLMessage": 'Message not saved', "ok": false }
+            return { "SQLMessage": 'Message not saved', "ok": false }
     }
 }
 
