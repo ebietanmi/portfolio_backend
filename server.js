@@ -33,7 +33,9 @@ app.use(cors({
     origin: allowedOrigins, // NO '*'
     credentials: true,      // allows cookies
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization', 
+                    'application/json', 'Accept', 'Origin', 
+                    'X-Requested-With', 'Access-Control-Allow-Origin'],
 })) // 
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }));
@@ -372,12 +374,12 @@ export async function sendAndSaveMail() {
                 from: email,
                 to: process.env.USER_EMAIL,
                 subject: subject,
-                html: '<p>Your email sent <strong>Succesfully!</strong>!</p>'
+                message: message,
             });
             if (data) {
                 const sql_response = await createRecievedMailSQL(name, email, subject, message);
                 if (sql_response.ok) {
-                    res.status(200).json({ 'ok': true, 'message': 'Email sent successfully' });
+                    res.status(201).json({ 'ok': true, 'message': 'Email sent successfully' });
                 }
             }
             else {
