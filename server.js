@@ -368,6 +368,13 @@ async function checkMailNetworkStatus() {
 export async function sendAndSaveMail() {
     await app.post("/send-mail", async (req, res) => {
         const { name, email, subject, message } = req.body;
+        const resp = await resend.emails.send({
+                from: `${name}, <${email}>`,
+                to: [`${process.env.USER_MAIL}`],
+                subject:`${subject}`,
+                message:`${message}`,
+            });
+
         // try {
         //     await resend.emails.send({
         //         from: `${name}, <${email}>`,
@@ -389,7 +396,7 @@ export async function sendAndSaveMail() {
         //     console.log("From Node",error)
         //     res.status(500).json({ 'ok': false, 'message': 'Internal Server error, Email not sent' })
         // }
-        res.status(200).json({ 'ok': true, 'message':{ name, email, subject, message }});
+        res.status(200).json({ 'ok': true, 'message':{ name, email, subject, message, resp  }});
     }
     );
 }
