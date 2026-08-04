@@ -20,7 +20,7 @@ dotenv.config();
 
 if (!process.env.DATABASE_URL) {
     throw new Error('DATABASE_URL is not set');
-}   
+}
 
 const PORT = process.env.PORT || 8080;
 const app = express();
@@ -369,12 +369,13 @@ export async function sendAndSaveMail() {
     await app.post("/send-mail", async (req, res) => {
         const { name, email, subject, message } = req.body;
         try {
-            const { data, error } = await resend.emails.send({
-                from: email,
-                to: process.env.USER_EMAIL,
-                subject: subject,
-                message: message,
+            await resend.emails.send({
+                from: `${name}, <${email}>`,
+                to: [`${process.env.USER_MAIL}`],
+                subject:`${subject}`,
+                message:`${message}`,
             });
+
             if (data) {
                 const sql_response = await createRecievedMailSQL(name, email, subject, message);
                 if (sql_response.ok) {
@@ -382,7 +383,7 @@ export async function sendAndSaveMail() {
                 }
             }
             else {
-                res.status(500).json({ 'ok': false, 'message': 'Email sent but not saved' })
+                res.status(501).json({ 'ok': false, 'message': 'Email sent but not saved' })
             }
         } catch (error) {
             res.status(500).json({ 'ok': false, 'message': 'Internal Server error, Email not sent' })
