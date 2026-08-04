@@ -33,9 +33,7 @@ app.use(cors({
     origin: allowedOrigins, // NO '*'
     credentials: true,      // allows cookies
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 
-                    'application/json', 'Accept', 'Origin', 
-                    'X-Requested-With', 'Access-Control-Allow-Origin'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'application/json'],
 })) // 
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }));
