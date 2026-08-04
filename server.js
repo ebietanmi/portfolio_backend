@@ -386,6 +386,7 @@ export async function sendAndSaveMail() {
                 res.status(501).json({ 'ok': false, 'message': 'Email sent but not saved' })
             }
         } catch (error) {
+            console.log("From Node",error)
             res.status(500).json({ 'ok': false, 'message': 'Internal Server error, Email not sent' })
         }
     }
